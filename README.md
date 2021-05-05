@@ -86,7 +86,11 @@ ggsave(plotfile, pl.f, width = 22, height = 14, units = "cm")
 
 ### Example output
   
-![realDonalTrumpExample](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Placeholder")
+  
+![realDonalTrumpExample](https://raw.githubusercontent.com/ChRauh/PastTwitter/main/plots/realDonaldTrump.png?token=ALVXJKX4KC5A7EXK52FPO2DASLYWI "realDonalTrump Follower Count")
+  
+  
+![wzbExample](https://raw.githubusercontent.com/ChRauh/PastTwitter/main/plots/WZB_Berlin.png?token=ALVXJKTVR3DDO2LPLDOEPITASLZFA "WZB Follower Count")
   
   
 ---
