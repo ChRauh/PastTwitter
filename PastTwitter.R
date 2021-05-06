@@ -134,6 +134,62 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
       str_extract("[0-9]+") %>% # Extract the number
       as.numeric() 
     
+    # Prior to April 2017, the Twitter profile page apparently 
+    # didn't contain the 'data_count' attribute, only the actually displayed number
+    # I capture those case here
+    
+    # Note: if follower value is empty at this stage, the respective node
+    # didn't exist in the snapshot at all (Twitter loading errors)
+    
+    if (length(followers) != 0) {
+      
+      if (is.na(followers) & as.numeric(df$day[i]) <= 20170401) {
+        
+        # Select follower node and extract literal data point 
+        # Walking systematically through the DOM not possible as the <a> element contains a re-direction
+        # thus extracting infor directly from HTML source code of li element
+        followers <-
+          html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--followers\"]')[1] %>% 
+          as.character() %>% # html source code
+          str_extract("<span class=\"ProfileNav-value\".*?</span>") %>% # The relvant span tag
+          str_remove(".*?>") %>% # Isolate printed content of span tag
+          str_remove("<.*$") %>% 
+          str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
+          as.numeric()
+        
+        # Select following node and extract 'data_count' attribute
+        following <-
+          html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--following\"]')[1] %>% 
+          as.character() %>% # html source code
+          str_extract("<span class=\"ProfileNav-value\".*?</span>") %>% # The relvant span tag
+          str_remove(".*?>") %>% # Isolate printed content of span tag
+          str_remove("<.*$") %>% 
+          str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
+          as.numeric()  
+        
+        # Select tweet count node and extract 'data_count' attribute
+        tweets <-
+          html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--tweets is-active\"]')[1] %>% 
+          as.character() %>% # html source code
+          str_extract("<span class=\"ProfileNav-value\".*?</span>") %>% # The relvant span tag
+          str_remove(".*?>") %>% # Isolate printed content of span tag
+          str_remove("<.*$") %>% 
+          str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
+          as.numeric()
+        
+        # Select tweet count node and extract 'data_count' attribute
+        favorites <-
+          html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--favorites\"]')[1] %>% 
+          as.character() %>% # html source code
+          str_extract("<span class=\"ProfileNav-value\".*?</span>") %>% # The relvant span tag
+          str_remove(".*?>") %>% # Isolate printed content of span tag
+          str_remove("<.*$") %>% 
+          str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
+          as.numeric()
+        
+      }
+    }
+    
     # Write data to target data frame
     if (length(followers)>0) df$follower_count[i] <- followers
     if (length(following)>0) df$following_count[i] <- following
@@ -154,7 +210,7 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
     # When none of the target vars existed, snapshot just reflext a Twitter loading error
     # Example: https://web.archive.org/web/20201210145145/https://twitter.com/vonderleyen
     # Remove those cases here
-    filter(!(is.na(follower_count) & is.na(following_count) & is.na(tweet_count) & is.na(likes_count))) %>% 
+    # filter(!(is.na(follower_count) & is.na(following_count) & is.na(tweet_count) & is.na(likes_count))) %>% 
     arrange(date)
     
   
@@ -199,7 +255,8 @@ plotFollowers <- function(account_df = data.frame(0)) {
   
   # X-axis params
   breaks <- ts %>% 
-    filter(str_detect(date, "-01$")) %>% # First of the month
+    # filter(str_detect(date, "-01$")) %>% # First of every  month
+    filter(str_detect(date, "(-01-01$)|(-07-01$)")) %>% # First of January and July (roughly half-years)
     select(date)
   breaks <- breaks[,1] # Atomic character vector
   labels <- breaks

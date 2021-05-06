@@ -8,7 +8,7 @@
 source("PastTwitter.R")
 
 # The Twitter handle of interest ####
-handle <- "vonderleyen"
+handle <- "WZB_Berlin"
 
 # Output params
 datafile <- paste0("./data/", handle, ".RDS")
