@@ -1,6 +1,6 @@
 #####################################################
 # Exemplary application of the PastTwitter functions
-# Author: @ChRauh (05.05.2021)
+# Author: @ChRauh (07.05.2021)
 #####################################################
 
 
@@ -8,7 +8,7 @@
 source("PastTwitter.R")
 
 # The Twitter handle of interest ####
-handle <- "WZB_Berlin"
+handle <- "realDonaldTrump"
 
 # Output params
 datafile <- paste0("./data/", handle, ".RDS")

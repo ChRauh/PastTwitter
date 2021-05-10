@@ -53,7 +53,7 @@ A `ggplot()` object indicating profile follower count of the specified handle at
  
 ```R
 # Note: Execution time depends strongly on the number of available archive.org snapshots
-# For the 'realDonaldTrump' example > 2h
+# For the 'realDonaldTrump' example > 3h (2232 available snapshots on May 6 2021)
 # Functions provide rudimentary progress feedback
 
 # Attach PastTwitter functions ####
@@ -100,3 +100,5 @@ ggsave(plotfile, pl.f, width = 22, height = 14, units = "cm")
   * [tidyverse](https://cran.r-project.org/web/packages/tidyverse/index.html) (>= 1.3.0) 
   * [rjson](https://cran.r-project.org/web/packages/rjson/index.html) (>= 0.2.20) 
   * [rvest](https://cran.r-project.org/web/packages/rvest/index.html) (>= 0.3.6) 
+  * [[httr](https://cran.r-project.org/web/packages/httr/index.html) (>= 1.4.2)]  
+
