@@ -111,7 +111,7 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
       as.character() %>% # html source code
       str_extract("data-count.*?( |>)") %>%  # String match 'data-count' attribute until next whitepsace or tag end
       str_extract("[0-9]+") %>% # Extract the number
-      as.numeric()
+      as.integer()
     
     # Select following node and extract 'data_count' attribute
     following <-
@@ -119,7 +119,7 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
       as.character() %>% # html source code
       str_extract("data-count.*?( |>)") %>%  # String match 'data-count' attribute until next whitepsace or tag end
       str_extract("[0-9]+") %>% # Extract the number
-      as.numeric()  
+      as.integer()  
     
     # Select tweet count node and extract 'data_count' attribute
     tweets <-
@@ -127,7 +127,7 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
       as.character() %>% # html source code
       str_extract("data-count.*?( |>)") %>%  # String match 'data-count' attribute until next whitepsace or tag end
       str_extract("[0-9]+") %>% # Extract the number
-      as.numeric() 
+      as.integer() 
     
     # Select favorite count node and extract 'data_count' attribute
     favorites <-
@@ -135,7 +135,7 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
       as.character() %>% # html source code
       str_extract("data-count.*?( |>)") %>%  # String match 'data-count' attribute until next whitepsace or tag end
       str_extract("[0-9]+") %>% # Extract the number
-      as.numeric() 
+      as.integer() 
     
     # Prior to April 2017, the Twitter profile page apparently 
     # didn't contain the 'data_count' attribute, often only the actually displayed number
@@ -158,7 +158,7 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
           str_remove(".*?>") %>% # Isolate printed content of span tag
           str_remove("<.*$") %>% 
           str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
-          as.numeric() # Note that this removes data entries for which 'data-is-compact="true"' in the span tag (e.g. 2,6M), those will be captured only for the data-count approach above
+          as.integer() # Note that this removes data entries for which 'data-is-compact="true"' in the span tag (e.g. 2,6M), those will be captured only for the data-count approach above
         
         # Select following node and extract 'data_count' attribute
         following <-
@@ -168,7 +168,7 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
           str_remove(".*?>") %>% # Isolate printed content of span tag
           str_remove("<.*$") %>% 
           str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
-          as.numeric()  
+          as.integer()  
         
         # Select tweet count node and extract 'data_count' attribute
         tweets <-
@@ -178,7 +178,7 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
           str_remove(".*?>") %>% # Isolate printed content of span tag
           str_remove("<.*$") %>% 
           str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
-          as.numeric()
+          as.integer()
         
         # Select tweet count node and extract 'data_count' attribute
         favorites <-
@@ -188,7 +188,7 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
           str_remove(".*?>") %>% # Isolate printed content of span tag
           str_remove("<.*$") %>% 
           str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
-          as.numeric()
+          as.integer()
       }
     }
     
@@ -206,7 +206,7 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
           html_node(xpath = '//a[(@data-nav="followers")]') %>% 
           html_attr("title") %>% 
           str_remove_all("[^0-9]") %>% # Remove all non-numeric content
-          as.numeric()
+          as.integer()
         
         # Extract following count from respective a title attribute
         following <-
@@ -214,7 +214,7 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
           html_node(xpath = '//a[(@data-nav="following")]') %>% 
           html_attr("title") %>% 
           str_remove_all("[^0-9]") %>% # Remove all non-numeric content
-          as.numeric() 
+          as.integer() 
         
         # Extract tweet count from respective a title attribute
         tweets <-
@@ -222,7 +222,7 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
           html_node(xpath = '//a[(@data-nav="tweets")]') %>% 
           html_attr("title") %>% 
           str_remove_all("[^0-9]") %>% # Remove all non-numeric content
-          as.numeric()
+          as.integer()
         
         # Extract favorites count from respective a title attribute
         favorites <-
@@ -230,7 +230,7 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
           html_node(xpath = '//a[(@data-nav="favorites")]') %>% 
           html_attr("title") %>% 
           str_remove_all("[^0-9]") %>% # Remove all non-numeric content
-          as.numeric()
+          as.integer()
       }
     }
     
@@ -246,24 +246,24 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
         html_node(page, xpath = '//a[(@data-element-term="follower_stats")]') %>%
         as.character() %>% 
         str_extract("strong>.*?<") %>% 
-        str_remove_all("(strong>|,|<)") %>% 
-        as.numeric()
+        str_remove_all("(strong>|,|\\.|<)") %>% 
+        as.integer()
       
       # Extract following count from respective a tag
       tweets <-
         html_node(page, xpath = '//a[(@data-element-term="following_stats")]') %>%
         as.character() %>% 
         str_extract("strong>.*?<") %>% 
-        str_remove_all("(strong>|,|<)") %>% 
-        as.numeric()
+        str_remove_all("(strong>|,|\\.|<)") %>% 
+        as.integer()
       
       # Extract tweet count from respective a tag
       following <-
         html_node(page, xpath = '//a[(@data-element-term="tweet_stats")]') %>%
         as.character() %>% 
         str_extract("strong>.*?<") %>% 
-        str_remove_all("(strong>|,|<)") %>% 
-        as.numeric()
+        str_remove_all("(strong>|,|\\.|<)") %>% 
+        as.integer()
     }
     
     
@@ -277,22 +277,22 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
       followers <-
         html_node(page, xpath = '//span[@id="follower_count"]') %>%
         html_text() %>% 
-        str_remove_all(",") %>% 
-        as.numeric()
+        str_remove_all(",|\\.") %>% 
+        as.integer()
       
       # Extract following count from respective span tag
       following <-
         html_node(page, xpath = '//span[@id="following_count"]') %>%
         html_text() %>% 
-        str_remove_all(",") %>% 
-        as.numeric()
+        str_remove_all(",|\\.") %>% 
+        as.integer()
       
       # Extract tweets from respective span tag
       tweets <-
         html_node(page, xpath = '//span[@id="update_count"]') %>%
         html_text() %>% 
-        str_remove_all(",") %>% 
-        as.numeric()
+        str_remove_all(",|\\.") %>% 
+        as.integer()
     }
     
     
