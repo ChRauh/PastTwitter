@@ -72,7 +72,7 @@ handleSnapshots <- function(handle = character(0)) {
 # Expected input: data frame structured along the output of handleSnapshots() output
 
 
-extractAccountInfo <- function(snapshot_df = data.frame(0)) {
+extractAccountInfo <- function(snapshot_df = data.frame(0), t_out = 120) {
   
   # Establish data frame with target variables
   df <- snapshot_df
@@ -87,224 +87,231 @@ extractAccountInfo <- function(snapshot_df = data.frame(0)) {
   # Loop through snapshots and extract info
   
   for (i in 1:nrow(df)) {
-    
+
     # Show progress
     print(paste0("Extract info from snapshot ", i, "/", nrow(df), " of ", turl, " ... Please wait."))
-    
-    # Read HTML of snapshot page
-    # archive.org takes some time
-    # wrapped in httr:GET to increase timeout tolerance
-    page <- read_html(df$surl[i])
-    # page <- df$surl[i] %>% GET(., timeout(120)) %>% read_html()
-    
-    # Select Profile Navigation node
-    prfnav <- html_node(page, xpath = "//div[@class=\"ProfileNav\"]") 
-    
-    # Select relevant list items
-    items <- html_nodes(prfnav, xpath = '//li[contains(@class, "ProfileNav-item")]')
-    
-    # Select follower node and extract 'data_count' attribute
-    # Walking systematically through the DOM not possible as the <a> element contains a re-direction
-    # thus extracting infor directly from HTML source code of li element
-    followers <-
-      html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--followers\"]')[1] %>% 
-      as.character() %>% # html source code
-      str_extract("data-count.*?( |>)") %>%  # String match 'data-count' attribute until next whitepsace or tag end
-      str_extract("[0-9]+") %>% # Extract the number
-      as.integer()
-    
-    # Select following node and extract 'data_count' attribute
-    following <-
-      html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--following\"]')[1] %>% 
-      as.character() %>% # html source code
-      str_extract("data-count.*?( |>)") %>%  # String match 'data-count' attribute until next whitepsace or tag end
-      str_extract("[0-9]+") %>% # Extract the number
-      as.integer()  
-    
-    # Select tweet count node and extract 'data_count' attribute
-    tweets <-
-      html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--tweets is-active\"]')[1] %>% 
-      as.character() %>% # html source code
-      str_extract("data-count.*?( |>)") %>%  # String match 'data-count' attribute until next whitepsace or tag end
-      str_extract("[0-9]+") %>% # Extract the number
-      as.integer() 
-    
-    # Select favorite count node and extract 'data_count' attribute
-    favorites <-
-      html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--favorites\"]')[1] %>% 
-      as.character() %>% # html source code
-      str_extract("data-count.*?( |>)") %>%  # String match 'data-count' attribute until next whitepsace or tag end
-      str_extract("[0-9]+") %>% # Extract the number
-      as.integer() 
-    
-    # Prior to April 2017, the Twitter profile page apparently 
-    # didn't contain the 'data_count' attribute, often only the actually displayed number
-    # I capture those case here
-    
-    # Note: if follower value is empty at this stage, the respective node
-    # didn't exist in the snapshot at all (Twitter loading errors)
-    
-    if (length(followers) != 0) {
+
+    # if errors arise in retrieving info from this url, this item will be skipped 
+    tryCatch({
       
-      if (is.na(followers) & as.numeric(df$day[i]) <= 20170401) {
+      # Read HTML of snapshot page
+      # archive.org takes some time
+      # wrapped in httr:GET to increase timeout tolerance
+      page <- read_html(df$surl[i])
+      page <- df$surl[i] %>% GET(., timeout(t_out)) %>% read_html()
+      
+      # Select Profile Navigation node
+      prfnav <- html_node(page, xpath = "//div[@class=\"ProfileNav\"]") 
+      
+      # Select relevant list items
+      items <- html_nodes(prfnav, xpath = '//li[contains(@class, "ProfileNav-item")]')
+      
+      # Select follower node and extract 'data_count' attribute
+      # Walking systematically through the DOM not possible as the <a> element contains a re-direction
+      # thus extracting infor directly from HTML source code of li element
+      followers <-
+        html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--followers\"]')[1] %>% 
+        as.character() %>% # html source code
+        str_extract("data-count.*?( |>)") %>%  # String match 'data-count' attribute until next whitepsace or tag end
+        str_extract("[0-9]+") %>% # Extract the number
+        as.integer()
+      
+      # Select following node and extract 'data_count' attribute
+      following <-
+        html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--following\"]')[1] %>% 
+        as.character() %>% # html source code
+        str_extract("data-count.*?( |>)") %>%  # String match 'data-count' attribute until next whitepsace or tag end
+        str_extract("[0-9]+") %>% # Extract the number
+        as.integer()  
+      
+      # Select tweet count node and extract 'data_count' attribute
+      tweets <-
+        html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--tweets is-active\"]')[1] %>% 
+        as.character() %>% # html source code
+        str_extract("data-count.*?( |>)") %>%  # String match 'data-count' attribute until next whitepsace or tag end
+        str_extract("[0-9]+") %>% # Extract the number
+        as.integer() 
+      
+      # Select favorite count node and extract 'data_count' attribute
+      favorites <-
+        html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--favorites\"]')[1] %>% 
+        as.character() %>% # html source code
+        str_extract("data-count.*?( |>)") %>%  # String match 'data-count' attribute until next whitepsace or tag end
+        str_extract("[0-9]+") %>% # Extract the number
+        as.integer() 
+      
+      # Prior to April 2017, the Twitter profile page apparently 
+      # didn't contain the 'data_count' attribute, often only the actually displayed number
+      # I capture those case here
+      
+      # Note: if follower value is empty at this stage, the respective node
+      # didn't exist in the snapshot at all (Twitter loading errors)
+      
+      if (length(followers) != 0) {
         
-        # Select follower node and extract literal data point 
-        # Walking systematically through the DOM not possible as the <a> element contains a re-direction
-        # thus extracting infor directly from HTML source code of li element
+        if (is.na(followers) & as.numeric(df$day[i]) <= 20170401) {
+          
+          # Select follower node and extract literal data point 
+          # Walking systematically through the DOM not possible as the <a> element contains a re-direction
+          # thus extracting infor directly from HTML source code of li element
+          followers <-
+            html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--followers\"]')[1] %>% 
+            as.character() %>% # html source code
+            str_extract("<span class=\"ProfileNav-value\".*?</span>") %>% # The relvant span tag
+            str_remove(".*?>") %>% # Isolate printed content of span tag
+            str_remove("<.*$") %>% 
+            str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
+            as.integer() # Note that this removes data entries for which 'data-is-compact="true"' in the span tag (e.g. 2,6M), those will be captured only for the data-count approach above
+          
+          # Select following node and extract 'data_count' attribute
+          following <-
+            html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--following\"]')[1] %>% 
+            as.character() %>% # html source code
+            str_extract("<span class=\"ProfileNav-value\".*?</span>") %>% # The relvant span tag
+            str_remove(".*?>") %>% # Isolate printed content of span tag
+            str_remove("<.*$") %>% 
+            str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
+            as.integer()  
+          
+          # Select tweet count node and extract 'data_count' attribute
+          tweets <-
+            html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--tweets is-active\"]')[1] %>% 
+            as.character() %>% # html source code
+            str_extract("<span class=\"ProfileNav-value\".*?</span>") %>% # The relvant span tag
+            str_remove(".*?>") %>% # Isolate printed content of span tag
+            str_remove("<.*$") %>% 
+            str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
+            as.integer()
+          
+          # Select tweet count node and extract 'data_count' attribute
+          favorites <-
+            html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--favorites\"]')[1] %>% 
+            as.character() %>% # html source code
+            str_extract("<span class=\"ProfileNav-value\".*?</span>") %>% # The relvant span tag
+            str_remove(".*?>") %>% # Isolate printed content of span tag
+            str_remove("<.*$") %>% 
+            str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
+            as.integer()
+        }
+      }
+      
+      # Where data presentation is set to compact for that period of the Twitter profile design
+      # the actual number is contained in the title attribute of the respective a tag
+      # I extract those here, again only if it has not been captured by the earlier approaches
+      
+      if (length(followers) != 0) {
+        
+        if (is.na(followers) & as.numeric(df$day[i]) <= 20170401) {
+          
+          # Extract follower count from respective a title attribute
+          followers <-
+            html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--followers\"]')[1] %>%
+            html_node(xpath = '//a[(@data-nav="followers")]') %>% 
+            html_attr("title") %>% 
+            str_remove_all("[^0-9]") %>% # Remove all non-numeric content
+            as.integer()
+          
+          # Extract following count from respective a title attribute
+          following <-
+            html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--followers\"]')[1] %>%
+            html_node(xpath = '//a[(@data-nav="following")]') %>% 
+            html_attr("title") %>% 
+            str_remove_all("[^0-9]") %>% # Remove all non-numeric content
+            as.integer() 
+          
+          # Extract tweet count from respective a title attribute
+          tweets <-
+            html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--followers\"]')[1] %>%
+            html_node(xpath = '//a[(@data-nav="tweets")]') %>% 
+            html_attr("title") %>% 
+            str_remove_all("[^0-9]") %>% # Remove all non-numeric content
+            as.integer()
+          
+          # Extract favorites count from respective a title attribute
+          favorites <-
+            html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--followers\"]')[1] %>%
+            html_node(xpath = '//a[(@data-nav="favorites")]') %>% 
+            html_attr("title") %>% 
+            str_remove_all("[^0-9]") %>% # Remove all non-numeric content
+            as.integer()
+        }
+      }
+      
+      
+      # Then there was an intermediate period ~2013 when the page design looked different
+      # without profile-nav-items, (so length(followers) == 0 here)
+      # collect this here if not yet found
+      
+      if(length(followers)==0) {
+        
+        # Extract follower count from respective a tag
         followers <-
-          html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--followers\"]')[1] %>% 
-          as.character() %>% # html source code
-          str_extract("<span class=\"ProfileNav-value\".*?</span>") %>% # The relvant span tag
-          str_remove(".*?>") %>% # Isolate printed content of span tag
-          str_remove("<.*$") %>% 
-          str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
-          as.integer() # Note that this removes data entries for which 'data-is-compact="true"' in the span tag (e.g. 2,6M), those will be captured only for the data-count approach above
-        
-        # Select following node and extract 'data_count' attribute
-        following <-
-          html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--following\"]')[1] %>% 
-          as.character() %>% # html source code
-          str_extract("<span class=\"ProfileNav-value\".*?</span>") %>% # The relvant span tag
-          str_remove(".*?>") %>% # Isolate printed content of span tag
-          str_remove("<.*$") %>% 
-          str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
-          as.integer()  
-        
-        # Select tweet count node and extract 'data_count' attribute
-        tweets <-
-          html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--tweets is-active\"]')[1] %>% 
-          as.character() %>% # html source code
-          str_extract("<span class=\"ProfileNav-value\".*?</span>") %>% # The relvant span tag
-          str_remove(".*?>") %>% # Isolate printed content of span tag
-          str_remove("<.*$") %>% 
-          str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
+          html_node(page, xpath = '//a[(@data-element-term="follower_stats")]') %>%
+          as.character() %>% 
+          str_extract("strong>.*?<") %>% 
+          str_remove_all("(strong>|,|\\.|<)") %>% 
           as.integer()
         
-        # Select tweet count node and extract 'data_count' attribute
-        favorites <-
-          html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--favorites\"]')[1] %>% 
-          as.character() %>% # html source code
-          str_extract("<span class=\"ProfileNav-value\".*?</span>") %>% # The relvant span tag
-          str_remove(".*?>") %>% # Isolate printed content of span tag
-          str_remove("<.*$") %>% 
-          str_remove_all("(\\.|,)") %>% # Remove commas or decimal points
+        # Extract following count from respective a tag
+        tweets <-
+          html_node(page, xpath = '//a[(@data-element-term="following_stats")]') %>%
+          as.character() %>% 
+          str_extract("strong>.*?<") %>% 
+          str_remove_all("(strong>|,|\\.|<)") %>% 
+          as.integer()
+        
+        # Extract tweet count from respective a tag
+        following <-
+          html_node(page, xpath = '//a[(@data-element-term="tweet_stats")]') %>%
+          as.character() %>% 
+          str_extract("strong>.*?<") %>% 
+          str_remove_all("(strong>|,|\\.|<)") %>% 
           as.integer()
       }
-    }
-    
-    # Where data presentation is set to compact for that period of the Twitter profile design
-    # the actual number is contained in the title attribute of the respective a tag
-    # I extract those here, again only if it has not been captured by the earlier approaches
-    
-    if (length(followers) != 0) {
       
-      if (is.na(followers) & as.numeric(df$day[i]) <= 20170401) {
+      
+      # Finally The very old design of the twitter profile page
+      # Exact break point somewhen before 20120829
+      
+      if(as.numeric(df$day[i]) <= 20120829) {
+      # if(length(followers)==0 & as.numeric(df$day[i]) <= 20120829) {
         
-        # Extract follower count from respective a title attribute
+        # Extract follower count from respective span tag
         followers <-
-          html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--followers\"]')[1] %>%
-          html_node(xpath = '//a[(@data-nav="followers")]') %>% 
-          html_attr("title") %>% 
-          str_remove_all("[^0-9]") %>% # Remove all non-numeric content
+          html_node(page, xpath = '//span[@id="follower_count"]') %>%
+          html_text() %>% 
+          str_remove_all(",|\\.") %>% 
           as.integer()
         
-        # Extract following count from respective a title attribute
+        # Extract following count from respective span tag
         following <-
-          html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--followers\"]')[1] %>%
-          html_node(xpath = '//a[(@data-nav="following")]') %>% 
-          html_attr("title") %>% 
-          str_remove_all("[^0-9]") %>% # Remove all non-numeric content
-          as.integer() 
-        
-        # Extract tweet count from respective a title attribute
-        tweets <-
-          html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--followers\"]')[1] %>%
-          html_node(xpath = '//a[(@data-nav="tweets")]') %>% 
-          html_attr("title") %>% 
-          str_remove_all("[^0-9]") %>% # Remove all non-numeric content
+          html_node(page, xpath = '//span[@id="following_count"]') %>%
+          html_text() %>% 
+          str_remove_all(",|\\.") %>% 
           as.integer()
         
-        # Extract favorites count from respective a title attribute
-        favorites <-
-          html_node(items, xpath = '//li[@class=\"ProfileNav-item ProfileNav-item--followers\"]')[1] %>%
-          html_node(xpath = '//a[(@data-nav="favorites")]') %>% 
-          html_attr("title") %>% 
-          str_remove_all("[^0-9]") %>% # Remove all non-numeric content
+        # Extract tweets from respective span tag
+        tweets <-
+          html_node(page, xpath = '//span[@id="update_count"]') %>%
+          html_text() %>% 
+          str_remove_all(",|\\.") %>% 
           as.integer()
       }
+      
+      
+      # Write data to target data frame
+      if (length(followers)>0) df$follower_count[i] <- followers
+      if (length(following)>0) df$following_count[i] <- following
+      if (length(favorites)>0) df$likes_count[i] <- favorites
+      if (length(tweets)>0) df$tweet_count[i] <- tweets
+      
+      # Clean up
+      rm(list = c('followers','following', 'favorites', 'tweets'))
+    },
+    error = function(e) {
+      print(paste0(turl, "row:", i, "yielded the following error: ", e, '. Skipping...'))
     }
-    
-    
-    # Then there was an intermediate period ~2013 when the page design looked different
-    # without profile-nav-items, (so length(followers) == 0 here)
-    # collect this here if not yet found
-    
-    if(length(followers)==0) {
-      
-      # Extract follower count from respective a tag
-      followers <-
-        html_node(page, xpath = '//a[(@data-element-term="follower_stats")]') %>%
-        as.character() %>% 
-        str_extract("strong>.*?<") %>% 
-        str_remove_all("(strong>|,|\\.|<)") %>% 
-        as.integer()
-      
-      # Extract following count from respective a tag
-      tweets <-
-        html_node(page, xpath = '//a[(@data-element-term="following_stats")]') %>%
-        as.character() %>% 
-        str_extract("strong>.*?<") %>% 
-        str_remove_all("(strong>|,|\\.|<)") %>% 
-        as.integer()
-      
-      # Extract tweet count from respective a tag
-      following <-
-        html_node(page, xpath = '//a[(@data-element-term="tweet_stats")]') %>%
-        as.character() %>% 
-        str_extract("strong>.*?<") %>% 
-        str_remove_all("(strong>|,|\\.|<)") %>% 
-        as.integer()
-    }
-    
-    
-    # Finally The very old design of the twitter profile page
-    # Exact break point somewhen before 20120829
-    
-    if(as.numeric(df$day[i]) <= 20120829) {
-    # if(length(followers)==0 & as.numeric(df$day[i]) <= 20120829) {
-      
-      # Extract follower count from respective span tag
-      followers <-
-        html_node(page, xpath = '//span[@id="follower_count"]') %>%
-        html_text() %>% 
-        str_remove_all(",|\\.") %>% 
-        as.integer()
-      
-      # Extract following count from respective span tag
-      following <-
-        html_node(page, xpath = '//span[@id="following_count"]') %>%
-        html_text() %>% 
-        str_remove_all(",|\\.") %>% 
-        as.integer()
-      
-      # Extract tweets from respective span tag
-      tweets <-
-        html_node(page, xpath = '//span[@id="update_count"]') %>%
-        html_text() %>% 
-        str_remove_all(",|\\.") %>% 
-        as.integer()
-    }
-    
-    
-    # Write data to target data frame
-    if (length(followers)>0) df$follower_count[i] <- followers
-    if (length(following)>0) df$following_count[i] <- following
-    if (length(favorites)>0) df$likes_count[i] <- favorites
-    if (length(tweets)>0) df$tweet_count[i] <- tweets
-    
-    # Clean up
-    rm(list = c('followers','following', 'favorites', 'tweets'))
-    
+    )    
   }
   
   # Clean up
