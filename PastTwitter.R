@@ -309,7 +309,7 @@ extractAccountInfo <- function(snapshot_df = data.frame(0), t_out = 120) {
       rm(list = c('followers','following', 'favorites', 'tweets'))
     },
     error = function(e) {
-      print(paste0(turl, "row:", i, "yielded the following error: ", e, '. Skipping...'))
+      print(paste0(turl, " row: ", i, " yielded the following error: ", e, '. Skipping...'))
     }
     )    
   }
