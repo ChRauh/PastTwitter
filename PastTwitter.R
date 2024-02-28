@@ -97,7 +97,6 @@ extractAccountInfo <- function(snapshot_df = data.frame(0), t_out = 120) {
       # Read HTML of snapshot page
       # archive.org takes some time
       # wrapped in httr:GET to increase timeout tolerance
-      page <- read_html(df$surl[i])
       page <- df$surl[i] %>% GET(., timeout(t_out)) %>% read_html()
       
       # Select Profile Navigation node
